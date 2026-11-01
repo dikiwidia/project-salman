@@ -1,256 +1,644 @@
 {
   "info": {
     "name": "Product API",
-    "description": "Koleksi untuk pengecekan endpoint CRUD Product.\n\nVariabel:\n- base_url: alamat aplikasi (default http://localhost:8000)\n- product_id: diisi otomatis setelah request \"Create Product\" berhasil.",
+    "description": "Koleksi untuk pengecekan endpoint Auth (Sanctum) dan CRUD Product.\n\nJalankan berurutan dengan Collection Runner: Auth -> Products -> Logout.\n\nVariabel:\n- base_url: alamat aplikasi (default http://localhost:8000)\n- email / password: kredensial login (default dari UserSeeder)\n- token: diisi otomatis setelah request \"Login\" berhasil, dipakai sebagai Bearer token di seluruh koleksi.\n- product_id: diisi otomatis setelah request \"Create Product\" berhasil.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "base_url", "value": "http://localhost:8000" },
-    { "key": "product_id", "value": "1" }
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "email",
+      "value": "salman@unilam.ac.id"
+    },
+    {
+      "key": "password",
+      "value": "password"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "product_id",
+      "value": "1"
+    }
   ],
   "item": [
     {
-      "name": "List Products",
-      "event": [
+      "name": "Auth",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('Status 200', () => pm.response.to.have.status(200));",
-              "pm.test('Mengandung data dan meta pagination', () => {",
-              "    const json = pm.response.json();",
-              "    pm.expect(json).to.have.property('data');",
-              "    pm.expect(json).to.have.property('meta');",
-              "});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [{ "key": "Accept", "value": "application/json" }],
-        "url": {
-          "raw": "{{base_url}}/api/products?page=1",
-          "host": ["{{base_url}}"],
-          "path": ["api", "products"],
-          "query": [{ "key": "page", "value": "1" }]
-        }
-      }
-    },
-    {
-      "name": "Create Product",
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.collectionVariables.set('random_code', 'PRD-' + Date.now());"
-            ]
+          "name": "Login - Invalid Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Ada error pada field email', () => {",
+                  "    pm.expect(pm.response.json().errors).to.have.property('email');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"password-salah\",\n    \"device_name\": \"postman\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
           }
         },
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('Status 201', () => pm.response.to.have.status(201));",
-              "const json = pm.response.json();",
-              "pm.test('Data produk sesuai', () => {",
-              "    pm.expect(json.data.name).to.eql('Produk Uji Postman');",
-              "    pm.expect(json.data.supplier_name).to.eql('PT Supplier Uji');",
-              "});",
-              "if (json.data && json.data.id) {",
-              "    pm.collectionVariables.set('product_id', json.data.id);",
-              "}"
-            ]
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Mengandung token dan user', () => {",
+                  "    pm.expect(json).to.have.property('token');",
+                  "    pm.expect(json.token_type).to.eql('Bearer');",
+                  "    pm.expect(json.user.email).to.eql(pm.collectionVariables.get('email'));",
+                  "});",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('token', json.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\",\n    \"device_name\": \"postman\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
           }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Accept", "value": "application/json" },
-          { "key": "Content-Type", "value": "application/json" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"code\": \"{{random_code}}\",\n    \"name\": \"Produk Uji Postman\",\n    \"price\": 25000,\n    \"expired_date\": \"2027-12-31\",\n    \"supplier_name\": \"PT Supplier Uji\"\n}"
         },
-        "url": {
-          "raw": "{{base_url}}/api/products",
-          "host": ["{{base_url}}"],
-          "path": ["api", "products"]
-        }
-      }
-    },
-    {
-      "name": "Create Product - Validation Error",
-      "event": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('Status 422', () => pm.response.to.have.status(422));",
-              "pm.test('Ada error untuk field wajib', () => {",
-              "    const errors = pm.response.json().errors;",
-              "    pm.expect(errors).to.have.property('code');",
-              "    pm.expect(errors).to.have.property('name');",
-              "    pm.expect(errors).to.have.property('price');",
-              "    pm.expect(errors).to.have.property('supplier_name');",
-              "});"
-            ]
+          "name": "Me",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Data user sesuai', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(data.email).to.eql(pm.collectionVariables.get('email'));",
+                  "    pm.expect(data).to.not.have.property('password');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
           }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Accept", "value": "application/json" },
-          { "key": "Content-Type", "value": "application/json" }
-        ],
-        "body": { "mode": "raw", "raw": "{}" },
-        "url": {
-          "raw": "{{base_url}}/api/products",
-          "host": ["{{base_url}}"],
-          "path": ["api", "products"]
-        }
-      }
-    },
-    {
-      "name": "Show Product",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('Status 200', () => pm.response.to.have.status(200));",
-              "pm.test('ID sesuai', () => {",
-              "    pm.expect(String(pm.response.json().data.id)).to.eql(String(pm.collectionVariables.get('product_id')));",
-              "});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [{ "key": "Accept", "value": "application/json" }],
-        "url": {
-          "raw": "{{base_url}}/api/products/{{product_id}}",
-          "host": ["{{base_url}}"],
-          "path": ["api", "products", "{{product_id}}"]
-        }
-      }
-    },
-    {
-      "name": "Update Product (PUT)",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('Status 200', () => pm.response.to.have.status(200));",
-              "pm.test('Data terupdate', () => {",
-              "    const data = pm.response.json().data;",
-              "    pm.expect(data.name).to.eql('Produk Uji Postman (Update)');",
-              "    pm.expect(Number(data.price)).to.eql(30000);",
-              "});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "PUT",
-        "header": [
-          { "key": "Accept", "value": "application/json" },
-          { "key": "Content-Type", "value": "application/json" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"name\": \"Produk Uji Postman (Update)\",\n    \"price\": 30000,\n    \"expired_date\": \"2028-01-31\",\n    \"supplier_name\": \"PT Supplier Uji Baru\"\n}"
         },
-        "url": {
-          "raw": "{{base_url}}/api/products/{{product_id}}",
-          "host": ["{{base_url}}"],
-          "path": ["api", "products", "{{product_id}}"]
-        }
-      }
-    },
-    {
-      "name": "Update Product (PATCH sebagian)",
-      "event": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('Status 200', () => pm.response.to.have.status(200));",
-              "pm.test('Harga terupdate', () => {",
-              "    pm.expect(Number(pm.response.json().data.price)).to.eql(27500);",
-              "});"
-            ]
+          "name": "Me - Unauthenticated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
           }
         }
-      ],
-      "request": {
-        "method": "PATCH",
-        "header": [
-          { "key": "Accept", "value": "application/json" },
-          { "key": "Content-Type", "value": "application/json" }
-        ],
-        "body": { "mode": "raw", "raw": "{\n    \"price\": 27500\n}" },
-        "url": {
-          "raw": "{{base_url}}/api/products/{{product_id}}",
-          "host": ["{{base_url}}"],
-          "path": ["api", "products", "{{product_id}}"]
-        }
-      }
+      ]
     },
     {
-      "name": "Delete Product",
-      "event": [
+      "name": "Products",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"]
+          "name": "List Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Mengandung data dan meta pagination', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('data');",
+                  "    pm.expect(json).to.have.property('meta');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/products?page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('random_code', 'PRD-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Data produk sesuai', () => {",
+                  "    pm.expect(json.data.name).to.eql('Produk Uji Postman');",
+                  "    pm.expect(json.data.supplier_name).to.eql('PT Supplier Uji');",
+                  "});",
+                  "if (json.data && json.data.id) {",
+                  "    pm.collectionVariables.set('product_id', json.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"code\": \"{{random_code}}\",\n    \"name\": \"Produk Uji Postman\",\n    \"price\": 25000,\n    \"expired_date\": \"2027-12-31\",\n    \"supplier_name\": \"PT Supplier Uji\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Product - Validation Error",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Ada error untuk field wajib', () => {",
+                  "    const errors = pm.response.json().errors;",
+                  "    pm.expect(errors).to.have.property('code');",
+                  "    pm.expect(errors).to.have.property('name');",
+                  "    pm.expect(errors).to.have.property('price');",
+                  "    pm.expect(errors).to.have.property('supplier_name');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Show Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ID sesuai', () => {",
+                  "    pm.expect(String(pm.response.json().data.id)).to.eql(String(pm.collectionVariables.get('product_id')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/products/{{product_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{product_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Product (PUT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Data terupdate', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(data.name).to.eql('Produk Uji Postman (Update)');",
+                  "    pm.expect(Number(data.price)).to.eql(30000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Produk Uji Postman (Update)\",\n    \"price\": 30000,\n    \"expired_date\": \"2028-01-31\",\n    \"supplier_name\": \"PT Supplier Uji Baru\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/{{product_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{product_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Product (PATCH sebagian)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Harga terupdate', () => {",
+                  "    pm.expect(Number(pm.response.json().data.price)).to.eql(27500);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"price\": 27500\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/{{product_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{product_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/products/{{product_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{product_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Show Product - Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/products/{{product_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{product_id}}"
+              ]
+            }
           }
         }
-      ],
-      "request": {
-        "method": "DELETE",
-        "header": [{ "key": "Accept", "value": "application/json" }],
-        "url": {
-          "raw": "{{base_url}}/api/products/{{product_id}}",
-          "host": ["{{base_url}}"],
-          "path": ["api", "products", "{{product_id}}"]
-        }
-      }
+      ]
     },
     {
-      "name": "Show Product - Not Found",
-      "event": [
+      "name": "Logout",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"]
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "logout"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Me - Setelah Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401 karena token sudah dicabut', () => pm.response.to.have.status(401));",
+                  "pm.collectionVariables.set('token', '');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
           }
         }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [{ "key": "Accept", "value": "application/json" }],
-        "url": {
-          "raw": "{{base_url}}/api/products/{{product_id}}",
-          "host": ["{{base_url}}"],
-          "path": ["api", "products", "{{product_id}}"]
-        }
-      }
+      ]
     }
-  ]
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
 }
